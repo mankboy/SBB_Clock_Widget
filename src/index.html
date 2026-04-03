@@ -43,6 +43,11 @@
     overflow: hidden;
   }
 
+  /* All clock internals pass through mouse events to the container for dragging */
+  .clock-container * {
+    pointer-events: none;
+  }
+
   .dial {
     position: absolute;
     width: 100%;
