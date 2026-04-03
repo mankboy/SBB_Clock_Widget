@@ -43,6 +43,12 @@
     overflow: hidden;
   }
 
+  /* Force circular compositing on macOS transparent windows */
+  .clock-wrapper {
+    -webkit-mask-image: radial-gradient(circle at center, black 168px, transparent 169px);
+    mask-image: radial-gradient(circle at center, black 168px, transparent 169px);
+  }
+
   /* All clock internals pass through mouse events to the container for dragging */
   .clock-container * {
     pointer-events: none;
@@ -147,6 +153,8 @@
     height: auto;
     pointer-events: none;
     z-index: 0;
+    background: none;
+    overflow: visible;
   }
 
 
