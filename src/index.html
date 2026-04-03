@@ -42,11 +42,6 @@
     overflow: hidden;
   }
 
-  /* Force circular compositing on macOS transparent windows */
-  .clock-container {
-    -webkit-mask-image: radial-gradient(circle at center, black 50%, transparent calc(50% + 1px));
-    mask-image: radial-gradient(circle at center, black 50%, transparent calc(50% + 1px));
-  }
 
   /* All clock internals pass through mouse events to the container for dragging */
   .clock-container * {
