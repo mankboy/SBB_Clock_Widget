@@ -28,7 +28,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
   }
 
   .clock-container {
@@ -44,9 +43,9 @@
   }
 
   /* Force circular compositing on macOS transparent windows */
-  .clock-wrapper {
-    -webkit-mask-image: radial-gradient(circle at center, black 168px, transparent 169px);
-    mask-image: radial-gradient(circle at center, black 168px, transparent 169px);
+  .clock-container {
+    -webkit-mask-image: radial-gradient(circle at center, black 50%, transparent calc(50% + 1px));
+    mask-image: radial-gradient(circle at center, black 50%, transparent calc(50% + 1px));
   }
 
   /* All clock internals pass through mouse events to the container for dragging */
@@ -158,71 +157,72 @@
   }
 
 
-  /* Variant picker — visible in browser, non-interactive in Plash */
-  .variant-picker {
+  /* Right-click context menu */
+  .context-menu {
     display: none;
-    gap: 10px;
+    position: fixed;
+    pointer-events: auto;
+    background: rgba(30, 30, 30, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 10px;
+    padding: 6px 0;
+    min-width: 180px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    z-index: 200;
+    font-size: 13px;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .context-menu.visible {
+    display: block;
+  }
+
+  .context-menu-item {
+    padding: 6px 16px;
+    cursor: pointer;
+    display: flex;
     align-items: center;
-    position: relative;
-    z-index: 100;
+    gap: 10px;
   }
 
-  .variant-btn {
-    width: 32px;
-    height: 32px;
+  .context-menu-item:hover {
+    background: rgba(255,255,255,0.12);
+  }
+
+  .context-menu-item.active {
+    font-weight: 600;
+  }
+
+  .context-menu-item .swatch {
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    border: 3px solid transparent;
-    cursor: pointer;
-    padding: 0;
-    position: relative;
-    transition: transform 0.15s ease;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    border: 2px solid rgba(255,255,255,0.3);
+    flex-shrink: 0;
   }
 
-  .variant-btn:hover { transform: scale(1.15); }
-
-  .variant-btn.active {
-    border-color: var(--sec-color, #EB0000);
-  }
-
-  .variant-btn .swatch-inner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-
-  .shadow-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 3px solid transparent;
-    cursor: pointer;
-    padding: 0;
-    background: #f0f0f0;
-    transition: transform 0.15s ease;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    font-size: 14px;
-    line-height: 32px;
+  .context-menu-item .check {
+    width: 14px;
     text-align: center;
-    color: #555;
-    margin-left: 6px;
+    flex-shrink: 0;
   }
 
-  .shadow-btn:hover { transform: scale(1.15); }
-  .shadow-btn.active { border-color: var(--sec-color, #EB0000); }
+  .context-menu-separator {
+    height: 1px;
+    background: rgba(255,255,255,0.12);
+    margin: 4px 0;
+  }
 
-  .url-hint {
+  .context-menu-label {
+    padding: 4px 16px 2px;
     font-size: 11px;
-    color: #999;
-    text-align: center;
-    max-width: 320px;
-    line-height: 1.4;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
+
 </style>
 </head>
 <body data-tauri-drag-region>
@@ -240,7 +240,7 @@
     <div class="center-dot"></div>
   </div>
 
-  <div class="variant-picker" id="variantPicker"></div>
+  <div class="context-menu" id="contextMenu"></div>
 </div>
 
 <script>
@@ -261,13 +261,16 @@
   const secondShadow = document.getElementById('secondShadow');
 
   // --- Variant definitions matching Mondaine SBB commerce range ---
+  // Tone-on-tone: copper, silver, gold have matching hands + border
   const variants = {
-    classic: { name: 'Classic',  border: '#C0C0C0', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
-    white:   { name: 'White',    border: '#E8E8E8', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
-    black:   { name: 'Black',    border: '#222222', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
-    dark:    { name: 'Dark',     border: '#222222', bg: '#111111', hand: '#ffffff', sec: '#EB0000' },
-    red:     { name: 'Red',      border: '#EB0000', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
-    gold:    { name: 'Gold',     border: '#C5A55A', bg: '#ffffff', hand: '#000000', sec: '#EB0000' }
+    classic: { name: 'Classic (Silver)',  border: '#C0C0C0', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
+    white:   { name: 'Pure White',       border: '#E8E8E8', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
+    black:   { name: 'Black',            border: '#222222', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
+    dark:    { name: 'Dark',             border: '#222222', bg: '#111111', hand: '#ffffff', sec: '#EB0000' },
+    red:     { name: 'Stop2Go Red',      border: '#EB0000', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
+    gold:    { name: 'Gold',             border: '#C5A55A', bg: '#ffffff', hand: '#C5A55A', sec: '#EB0000' },
+    copper:  { name: 'Copper',           border: '#B87333', bg: '#ffffff', hand: '#B87333', sec: '#EB0000' },
+    silver:  { name: 'Silver Tone',      border: '#A8A8A8', bg: '#ffffff', hand: '#A8A8A8', sec: '#EB0000' }
   };
 
   const shadowPresets = {
@@ -354,39 +357,86 @@
     } catch (e) {}
   }
 
-  // --- Build picker UI ---
-  const picker = document.getElementById('variantPicker');
+  // --- Right-click context menu ---
+  const ctxMenu = document.getElementById('contextMenu');
 
-  Object.entries(variants).forEach(([id, v]) => {
-    const btn = document.createElement('button');
-    btn.className = 'variant-btn' + (id === currentVariant ? ' active' : '');
-    btn.title = v.name;
-    btn.style.background = v.border;
-    btn.dataset.variant = id;
+  function buildContextMenu() {
+    while (ctxMenu.firstChild) ctxMenu.removeChild(ctxMenu.firstChild);
 
-    const inner = document.createElement('span');
-    inner.className = 'swatch-inner';
-    inner.style.background = v.bg;
-    btn.appendChild(inner);
+    // Variant section label
+    const varLabel = document.createElement('div');
+    varLabel.className = 'context-menu-label';
+    varLabel.textContent = 'Color Variant';
+    ctxMenu.appendChild(varLabel);
 
-    btn.addEventListener('click', () => applyVariant(id));
-    picker.appendChild(btn);
+    Object.entries(variants).forEach(([id, v]) => {
+      const item = document.createElement('div');
+      item.className = 'context-menu-item' + (id === currentVariant ? ' active' : '');
+      const check = document.createElement('span');
+      check.className = 'check';
+      check.textContent = id === currentVariant ? '\u2713' : '';
+      const swatch = document.createElement('span');
+      swatch.className = 'swatch';
+      swatch.style.background = v.border;
+      if (v.bg !== '#ffffff') swatch.style.background = 'linear-gradient(135deg, ' + v.border + ' 50%, ' + v.bg + ' 50%)';
+      const label = document.createElement('span');
+      label.textContent = v.name;
+      item.appendChild(check);
+      item.appendChild(swatch);
+      item.appendChild(label);
+      item.addEventListener('click', () => { applyVariant(id); hideContextMenu(); });
+      ctxMenu.appendChild(item);
+    });
+
+    // Separator
+    const sep = document.createElement('div');
+    sep.className = 'context-menu-separator';
+    ctxMenu.appendChild(sep);
+
+    // Shadow section label
+    const shadLabel = document.createElement('div');
+    shadLabel.className = 'context-menu-label';
+    shadLabel.textContent = 'Shadow';
+    ctxMenu.appendChild(shadLabel);
+
+    Object.entries(shadowPresets).forEach(([id, s]) => {
+      const item = document.createElement('div');
+      item.className = 'context-menu-item' + (id === currentShadow ? ' active' : '');
+      const check = document.createElement('span');
+      check.className = 'check';
+      check.textContent = id === currentShadow ? '\u2713' : '';
+      const label = document.createElement('span');
+      label.textContent = s.name;
+      item.appendChild(check);
+      item.appendChild(label);
+      item.addEventListener('click', () => { applyShadow(id); hideContextMenu(); });
+      ctxMenu.appendChild(item);
+    });
+  }
+
+  function showContextMenu(x, y) {
+    buildContextMenu();
+    ctxMenu.style.left = x + 'px';
+    ctxMenu.style.top = y + 'px';
+    ctxMenu.classList.add('visible');
+    // Reposition if overflowing window
+    const rect = ctxMenu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) ctxMenu.style.left = (window.innerWidth - rect.width - 4) + 'px';
+    if (rect.bottom > window.innerHeight) ctxMenu.style.top = (window.innerHeight - rect.height - 4) + 'px';
+  }
+
+  function hideContextMenu() {
+    ctxMenu.classList.remove('visible');
+  }
+
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showContextMenu(e.clientX, e.clientY);
   });
 
-  // Shadow cycle button
-  let shadowIndex = shadowKeys.indexOf(currentShadow);
-  const shadowBtn = document.createElement('button');
-  shadowBtn.className = 'shadow-btn';
-  shadowBtn.title = shadowPresets[currentShadow].name;
-  shadowBtn.textContent = shadowPresets[currentShadow].label;
-  shadowBtn.addEventListener('click', () => {
-    shadowIndex = (shadowIndex + 1) % shadowKeys.length;
-    const id = shadowKeys[shadowIndex];
-    applyShadow(id);
-    shadowBtn.title = shadowPresets[id].name;
-    shadowBtn.textContent = shadowPresets[id].label;
+  document.addEventListener('click', (e) => {
+    if (!ctxMenu.contains(e.target)) hideContextMenu();
   });
-  picker.appendChild(shadowBtn);
 
   // --- Apply initial config from URL params ---
   applyVariant(currentVariant);

@@ -14,7 +14,7 @@
         "label": "main",
         "title": "SBB Clock",
         "width": 340,
-        "height": 340,
+        "height": 540,
         "resizable": false,
         "decorations": false,
         "transparent": true,

@@ -22,17 +22,19 @@ pub fn run() {
 
             // --- Build variant submenu ---
             let v_classic = MenuItem::with_id(app, "variant_classic", "Classic (Silver)", true, None::<&str>)?;
-            let v_white = MenuItem::with_id(app, "variant_white", "White", true, None::<&str>)?;
+            let v_white = MenuItem::with_id(app, "variant_white", "Pure White", true, None::<&str>)?;
             let v_black = MenuItem::with_id(app, "variant_black", "Black", true, None::<&str>)?;
             let v_dark = MenuItem::with_id(app, "variant_dark", "Dark", true, None::<&str>)?;
-            let v_red = MenuItem::with_id(app, "variant_red", "Red", true, None::<&str>)?;
+            let v_red = MenuItem::with_id(app, "variant_red", "Stop2Go Red", true, None::<&str>)?;
             let v_gold = MenuItem::with_id(app, "variant_gold", "Gold", true, None::<&str>)?;
+            let v_copper = MenuItem::with_id(app, "variant_copper", "Copper", true, None::<&str>)?;
+            let v_silver = MenuItem::with_id(app, "variant_silver", "Silver Tone", true, None::<&str>)?;
 
             let variant_menu = Submenu::with_items(
                 app,
                 "Color Variant",
                 true,
-                &[&v_classic, &v_white, &v_black, &v_dark, &v_red, &v_gold],
+                &[&v_classic, &v_white, &v_black, &v_dark, &v_red, &v_gold, &v_copper, &v_silver],
             )?;
 
             // --- Build shadow submenu ---
