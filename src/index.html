@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en" style="background: transparent;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SBB Clock Widget</title>
+<style>
+  :root {
+    --clock-bg: #ffffff;
+    --clock-border: #C0C0C0;
+    --hand-color: #000000;
+    --sec-color: #EB0000;
+  }
+
+  body {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .clock-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .clock-container {
+    width: 300px;
+    height: 300px;
+    box-sizing: content-box;
+    background: var(--clock-bg);
+    border-radius: 50%;
+    border: 18px solid var(--clock-border);
+    position: relative;
+    box-shadow: var(--clock-shadow, 0 0 24px rgba(0,0,0,0.15));
+    overflow: hidden;
+  }
+
+  .dial {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+  }
+
+  .mark {
+    position: absolute;
+    background: var(--hand-color);
+    left: 50%;
+    top: 8px;
+    transform-origin: 50% 142px; /* 150px center minus 8px top offset */
+  }
+
+  .mark.minute { width: 4px; height: 10px; margin-left: -2px; }
+  .mark.hour { width: 11px; height: 36px; margin-left: -5.5px; }
+
+  .hand {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    background: var(--hand-color);
+    transform-origin: 50% 100%;
+    filter: drop-shadow(1px 2px 2px rgba(0,0,0, var(--hand-shadow-opacity, 0.2)));
+  }
+
+  /* Hour hand: 90px above center + 22px tail below, bold taper */
+  .hand.hour {
+    width: 20px;
+    height: 112px;
+    margin-left: -10px;
+    bottom: 42.7%;
+    transform-origin: 50% 80.4%;
+    z-index: 1;
+    clip-path: polygon(10% 0%, 90% 0%, 100% 80%, 100% 100%, 0% 100%, 0% 80%);
+  }
+
+  /* Minute hand: 125px above center + 28px tail below, bold taper */
+  .hand.minute {
+    width: 18px;
+    height: 165px;
+    margin-left: -9px;
+    bottom: 39.9%;
+    transform-origin: 50% 81.7%;
+    z-index: 2;
+    clip-path: polygon(12% 0%, 88% 0%, 100% 82%, 100% 100%, 0% 100%, 0% 82%);
+    transition: transform 0.2s cubic-bezier(0.4, 2.08, 0.55, 0.44);
+  }
+
+  /* Second hand: 105px above center + 39px tail below */
+  .hand.second {
+    width: 4px;
+    height: 144px;
+    margin-left: -2px;
+    background: var(--sec-color);
+    transform-origin: 50% 73%;
+    bottom: 37.2%;
+    z-index: 3;
+    filter: none;
+  }
+
+  /* The iconic red circle at the tip */
+  .hand.second::after {
+    content: '';
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    background: var(--sec-color);
+    border-radius: 50%;
+    top: -13px;
+    left: -11px;
+  }
+
+  /* Shadow elements hidden — using CSS drop-shadow on .hand instead */
+  .hand.shadow {
+    display: none;
+  }
+
+  .center-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--sec-color);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 4;
+  }
+
+  .clock-logo {
+    position: absolute;
+    top: 33%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px;
+    height: auto;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .clock-logo.invert {
+    filter: invert(1);
+  }
+
+  /* Variant picker — visible in browser, non-interactive in Plash */
+  .variant-picker {
+    display: none;
+    gap: 10px;
+    align-items: center;
+    position: relative;
+    z-index: 100;
+  }
+
+  .variant-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    transition: transform 0.15s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+
+  .variant-btn:hover { transform: scale(1.15); }
+
+  .variant-btn.active {
+    border-color: var(--sec-color, #EB0000);
+  }
+
+  .variant-btn .swatch-inner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .shadow-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    background: #f0f0f0;
+    transition: transform 0.15s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    font-size: 14px;
+    line-height: 32px;
+    text-align: center;
+    color: #555;
+    margin-left: 6px;
+  }
+
+  .shadow-btn:hover { transform: scale(1.15); }
+  .shadow-btn.active { border-color: var(--sec-color, #EB0000); }
+
+  .url-hint {
+    font-size: 11px;
+    color: #999;
+    text-align: center;
+    max-width: 320px;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body data-tauri-drag-region>
+
+<div class="clock-wrapper" data-tauri-drag-region>
+  <div class="clock-container" data-tauri-drag-region>
+    <div class="dial" id="dial"></div>
+    <img class="clock-logo" src="sbb-cff-ffs.svg" alt="SBB CFF FFS" draggable="false">
+    <div class="hand hour shadow" id="hourShadow"></div>
+    <div class="hand minute shadow" id="minuteShadow"></div>
+    <div class="hand second shadow" id="secondShadow"></div>
+    <div class="hand hour" id="hourHand"></div>
+    <div class="hand minute" id="minuteHand"></div>
+    <div class="hand second" id="secondHand"></div>
+    <div class="center-dot"></div>
+  </div>
+
+  <div class="variant-picker" id="variantPicker"></div>
+</div>
+
+<script>
+  // Draw the dial marks
+  const dial = document.getElementById('dial');
+  for (let i = 0; i < 60; i++) {
+    const mark = document.createElement('div');
+    mark.className = `mark ${i % 5 === 0 ? 'hour' : 'minute'}`;
+    mark.style.transform = `rotate(${i * 6}deg)`;
+    dial.appendChild(mark);
+  }
+
+  const hourHand = document.getElementById('hourHand');
+  const minuteHand = document.getElementById('minuteHand');
+  const secondHand = document.getElementById('secondHand');
+  const hourShadow = document.getElementById('hourShadow');
+  const minuteShadow = document.getElementById('minuteShadow');
+  const secondShadow = document.getElementById('secondShadow');
+
+  // --- Variant definitions matching Mondaine SBB commerce range ---
+  const variants = {
+    classic: { name: 'Classic',  border: '#C0C0C0', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
+    white:   { name: 'White',    border: '#E8E8E8', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
+    black:   { name: 'Black',    border: '#222222', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
+    dark:    { name: 'Dark',     border: '#222222', bg: '#111111', hand: '#ffffff', sec: '#EB0000' },
+    red:     { name: 'Red',      border: '#EB0000', bg: '#ffffff', hand: '#000000', sec: '#EB0000' },
+    gold:    { name: 'Gold',     border: '#C5A55A', bg: '#ffffff', hand: '#000000', sec: '#EB0000' }
+  };
+
+  const shadowPresets = {
+    light:  { name: 'Light shadow',  clock: '0 0 12px rgba(0,0,0,0.1)',  handOpacity: '0.1',  label: '○' },
+    medium: { name: 'Medium shadow', clock: '0 0 24px rgba(0,0,0,0.15)', handOpacity: '0.2',  label: '◐' },
+    heavy:  { name: 'Heavy shadow',  clock: '0 0 36px rgba(0,0,0,0.25)', handOpacity: '0.3', label: '●' },
+    none:   { name: 'No shadow',     clock: 'none',                         handOpacity: '0',    label: '◌' }
+  };
+  const shadowKeys = Object.keys(shadowPresets);
+
+  // --- Read config from URL query parameters ---
+  const params = new URLSearchParams(window.location.search);
+  let currentVariant = params.get('variant') || 'black';
+  let currentShadow = params.get('shadow') || 'medium';
+
+  // Validate
+  if (!variants[currentVariant]) currentVariant = 'classic';
+  if (!shadowPresets[currentShadow]) currentShadow = 'medium';
+
+  // --- Apply variant ---
+  function applyVariant(id) {
+    const v = variants[id];
+    if (!v) return;
+    currentVariant = id;
+
+    const root = document.documentElement;
+    root.style.setProperty('--clock-bg', v.bg);
+    root.style.setProperty('--clock-border', v.border);
+    root.style.setProperty('--hand-color', v.hand);
+    root.style.setProperty('--sec-color', v.sec);
+
+    // Invert logo for dark backgrounds so text stays visible
+    document.querySelector('.clock-logo').classList.toggle('invert', v.hand === '#ffffff');
+
+    document.querySelectorAll('.variant-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.variant === id);
+    });
+
+    updateSettings();
+  }
+
+  function applyShadow(id) {
+    const s = shadowPresets[id];
+    if (!s) return;
+    currentShadow = id;
+    document.documentElement.style.setProperty('--clock-shadow', s.clock);
+    document.documentElement.style.setProperty('--hand-shadow-opacity', s.handOpacity);
+    updateSettings();
+  }
+
+  // --- Persist settings via Tauri store (fallback: URL params for browser use) ---
+  let store = null;
+  async function initStore() {
+    if (window.__TAURI__) {
+      try {
+        const { load } = await import('@tauri-apps/plugin-store');
+        store = await load('settings.json', { autoSave: true });
+        // Load saved settings
+        const savedVariant = await store.get('variant');
+        const savedShadow = await store.get('shadow');
+        if (savedVariant && variants[savedVariant]) {
+          currentVariant = savedVariant;
+          applyVariant(currentVariant);
+        }
+        if (savedShadow && shadowPresets[savedShadow]) {
+          currentShadow = savedShadow;
+          applyShadow(currentShadow);
+        }
+      } catch (e) {
+        console.warn('Store not available:', e);
+      }
+    }
+  }
+
+  function updateSettings() {
+    if (store) {
+      store.set('variant', currentVariant);
+      store.set('shadow', currentShadow);
+    }
+    // Also update URL for browser/Plash fallback
+    try {
+      const url = new URL(window.location);
+      url.searchParams.set('variant', currentVariant);
+      url.searchParams.set('shadow', currentShadow);
+      history.replaceState(null, '', url);
+    } catch (e) {}
+  }
+
+  // --- Build picker UI ---
+  const picker = document.getElementById('variantPicker');
+
+  Object.entries(variants).forEach(([id, v]) => {
+    const btn = document.createElement('button');
+    btn.className = 'variant-btn' + (id === currentVariant ? ' active' : '');
+    btn.title = v.name;
+    btn.style.background = v.border;
+    btn.dataset.variant = id;
+
+    const inner = document.createElement('span');
+    inner.className = 'swatch-inner';
+    inner.style.background = v.bg;
+    btn.appendChild(inner);
+
+    btn.addEventListener('click', () => applyVariant(id));
+    picker.appendChild(btn);
+  });
+
+  // Shadow cycle button
+  let shadowIndex = shadowKeys.indexOf(currentShadow);
+  const shadowBtn = document.createElement('button');
+  shadowBtn.className = 'shadow-btn';
+  shadowBtn.title = shadowPresets[currentShadow].name;
+  shadowBtn.textContent = shadowPresets[currentShadow].label;
+  shadowBtn.addEventListener('click', () => {
+    shadowIndex = (shadowIndex + 1) % shadowKeys.length;
+    const id = shadowKeys[shadowIndex];
+    applyShadow(id);
+    shadowBtn.title = shadowPresets[id].name;
+    shadowBtn.textContent = shadowPresets[id].label;
+  });
+  picker.appendChild(shadowBtn);
+
+  // --- Apply initial config from URL params ---
+  applyVariant(currentVariant);
+  applyShadow(currentShadow);
+
+  // --- Clock animation ---
+  let secHandPaused = false;
+
+  function updateClock() {
+    const now = new Date();
+
+    const ms = now.getMilliseconds();
+    const s = now.getSeconds();
+    const m = now.getMinutes();
+    const h = now.getHours() % 12;
+
+    // SBB specific logic:
+    // The second hand completes a revolution in 58.5 seconds,
+    // then pauses at 12 o'clock for the remaining 1.5 seconds.
+    const exactSeconds = s + (ms / 1000);
+    const isPaused = exactSeconds > 58.5;
+    const secDegrees = isPaused ? 360 : (exactSeconds / 58.5) * 360;
+
+    // Handle the pause→sweep transition
+    if (secHandPaused && !isPaused) {
+      // Instantly reset to 0 (no backward spin from 360→0)
+      secondHand.style.transition = 'none';
+      secondHand.style.transform = 'rotate(0deg)';
+      secondShadow.style.transition = 'none';
+      secondShadow.style.transform = 'rotate(0deg)';
+      void secondHand.offsetHeight; // force reflow
+      // Apply bounce flick for the resuming snap
+      const flick = 'transform 0.6s cubic-bezier(0.2, 2.5, 0.4, 0.8)';
+      secondHand.style.transition = flick;
+      secondShadow.style.transition = flick;
+      setTimeout(() => {
+        secondHand.style.transition = 'none';
+        secondShadow.style.transition = 'none';
+      }, 600);
+    }
+    secHandPaused = isPaused;
+
+    // Minute jumps cleanly (SBB minutes only move when second hand reaches 12)
+    const minDegrees = m * 6;
+
+    // Hour hand moves smoothly throughout the hour
+    const hourDegrees = (h * 30) + (m * 0.5);
+
+    secondHand.style.transform = `rotate(${secDegrees}deg)`;
+    minuteHand.style.transform = `rotate(${minDegrees}deg)`;
+    hourHand.style.transform = `rotate(${hourDegrees}deg)`;
+    secondShadow.style.transform = `rotate(${secDegrees}deg)`;
+    minuteShadow.style.transform = `rotate(${minDegrees}deg)`;
+    hourShadow.style.transform = `rotate(${hourDegrees}deg)`;
+
+    requestAnimationFrame(updateClock);
+  }
+
+  // Initialize
+  updateClock();
+
+  // --- Tauri integration ---
+  if (window.__TAURI__) {
+    // Listen for tray menu events
+    import('@tauri-apps/api/event').then(({ listen }) => {
+      listen('set-variant', (event) => {
+        if (variants[event.payload]) {
+          applyVariant(event.payload);
+        }
+      });
+      listen('set-shadow', (event) => {
+        if (shadowPresets[event.payload]) {
+          applyShadow(event.payload);
+        }
+      });
+    });
+
+    // Enable window dragging via JS API
+    import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+      const appWindow = getCurrentWindow();
+      document.addEventListener('mousedown', (e) => {
+        if (e.button === 0) {
+          e.preventDefault();
+          appWindow.startDragging();
+        }
+      });
+    });
+
+    initStore();
+  }
+</script>
+
+</body>
+</html>
