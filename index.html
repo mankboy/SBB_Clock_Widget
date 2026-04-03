@@ -142,6 +142,10 @@
     z-index: 0;
   }
 
+  .clock-logo.invert {
+    filter: invert(1);
+  }
+
   /* Variant picker — visible in browser, non-interactive in Plash */
   .variant-picker {
     display: none;
@@ -283,6 +287,9 @@
     root.style.setProperty('--clock-border', v.border);
     root.style.setProperty('--hand-color', v.hand);
     root.style.setProperty('--sec-color', v.sec);
+
+    // Invert logo for dark backgrounds so text stays visible
+    document.querySelector('.clock-logo').classList.toggle('invert', v.hand === '#ffffff');
 
     document.querySelectorAll('.variant-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.variant === id);
