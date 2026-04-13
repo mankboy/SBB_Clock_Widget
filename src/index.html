@@ -10,6 +10,8 @@
     --clock-border: #C0C0C0;
     --hand-color: #000000;
     --sec-color: #EB0000;
+    --clock-shadow: 0 0 24px rgba(0,0,0,0.15);
+    --hand-shadow-opacity: 0.2;
   }
 
   body {
@@ -360,7 +362,8 @@
   const ctxMenu = document.getElementById('contextMenu');
 
   function buildContextMenu() {
-    while (ctxMenu.firstChild) ctxMenu.removeChild(ctxMenu.firstChild);
+    ctxMenu.innerHTML = '';
+    const MENU_EDGE_MARGIN = 4;
 
     // Variant section label
     const varLabel = document.createElement('div');
@@ -420,8 +423,8 @@
     ctxMenu.classList.add('visible');
     // Reposition if overflowing window
     const rect = ctxMenu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) ctxMenu.style.left = (window.innerWidth - rect.width - 4) + 'px';
-    if (rect.bottom > window.innerHeight) ctxMenu.style.top = (window.innerHeight - rect.height - 4) + 'px';
+    if (rect.right > window.innerWidth) ctxMenu.style.left = (window.innerWidth - rect.width - MENU_EDGE_MARGIN) + 'px';
+    if (rect.bottom > window.innerHeight) ctxMenu.style.top = (window.innerHeight - rect.height - MENU_EDGE_MARGIN) + 'px';
   }
 
   function hideContextMenu() {
